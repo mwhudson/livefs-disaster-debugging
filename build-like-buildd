@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# This is a kind of mini-launchpad-buildd that sets up a container as
+# launchpad-buildd does and then runs livecd-rootfs in it. You should
+# probably not run this on a host where you want apparmor to keep
+# working normally (build-in-vm can be used to run it in a vm).
+
+set -eux
+
+SERIES=$1
+VARS=${2-PROJECT=ubuntu-cpc SUBARCH=generic}
+
+echo Setting up LXD
+
+lxd init --auto
+
+echo Creating profile
+
+lxc profile copy default lpbuildd
+lxc profile set lpbuildd security.nesting true
+lxc profile set lpbuildd security.nesting true
+lxc profile set lpbuildd security.privileged true
+lxc profile set lpbuildd raw.lxc 'lxc.cap.drop=
+lxc.cap.drop=sys_time sys_module
+lxc.cgroup.devices.deny=
+lxc.cgroup.devices.allow=
+lxc.cgroup2.devices.deny=
+lxc.cgroup2.devices.allow=
+lxc.mount.auto=
+lxc.mount.auto=proc:rw sys:rw
+lxc.mount.entry=udev /dev devtmpfs rw,nosuid,relatime,mode=755,inode64
+lxc.autodev=0
+lxc.apparmor.profile=unconfined
+'
+
+echo Creating LXD container
+
+lxc init --profile lpbuildd ubuntu-daily:$SERIES $SERIES-buildd
+
+echo Starting LXD container
+
+lxc start $SERIES-buildd
+
+sleep 10
+lxc exec $container_name -- sh -c '
+set -ex
+apt-get update && apt-get dist-upgrade -y
+apt-get install -y livecd-rootfs
+mkdir auto
+for c in build clean config; do
+    ln -sv /usr/share/livecd-rootfs/live-build/auto/$c auto
+done
+lb clean --purge
+'$VARS' ARCH=amd64 SUITE='$SERIES' lb config
+'$VARS' ARCH=amd64 lb build
+'

@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# This script is an attempt to run livefs builds in a more
+# conventional, more confined container.
+#
+# You need to get some scripts from
+# https://github.com/mwhudson/losetup-server (and run the server from
+# that repo as well) to make this work and a livecd-rootfs built from
+# https://code.launchpad.net/~mwhudson/livecd-rootfs/+git/livecd-rootfs/+ref/build-in-unpriv/
+#
+# At the time of writing an ubuntu-cpc build gets as far as running
+# grub-install which fails for reasons I don't understand.
+
+set -ex
+
+series=$1
+pkg=$2
+vars=${3-PROJECT=ubuntu-cpc SUBARCH=generic}
+
+container_name=build-$series
+
+lxc init ubuntu-daily:$series $container_name
+lxc config set $container_name security.syscalls.intercept.mount=true
+lxc config set $container_name security.syscalls.intercept.mount.shift=true
+lxc config set $container_name security.syscalls.intercept.mount.allowed=devtmpfs,devpts,proc,sysfs,securityfs,squashfs,ext4,vfat,cgroup2
+lxc config device add $container_name loop-control unix-char path=/dev/loop-control
+lxc file push losetup-server.py $container_name/root
+lxc start $container_name
+sleep 10
+lxc file push $pkg $container_name/tmp/
+lxc exec $container_name -- sh -c '
+set -ex
+
+dpkg-divert --divert /usr/bin/mount.REAL --rename /usr/bin/mount
+dpkg-divert --divert /usr/sbin/losetup.REAL --rename /usr/sbin/losetup
+mv losetup-client.py /usr/sbin/losetup
+chmod a+x /usr/sbin/losetup
+mv mount-wrapper.py /usr/bin/mount
+chmod a+x /usr/bin/mount
+
+apt-get update && apt-get dist-upgrade -y
+dpkg -i /tmp/*.deb || true
+apt-get install -y -f
+mkdir auto
+for c in build clean config; do
+    ln -sv /usr/share/livecd-rootfs/live-build/auto/$c auto
+done
+lb clean --purge
+'$vars' ARCH=amd64 SUITE='$series' lb config
+'$vars' ARCH=amd64 lb build
+'
