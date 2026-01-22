@@ -41,7 +41,7 @@ echo Starting LXD container
 lxc start $SERIES-buildd
 
 sleep 10
-lxc exec $container_name -- sh -c '
+lxc exec $SERIES-buildd -- sh -c '
 set -ex
 apt-get update && apt-get dist-upgrade -y
 apt-get install -y livecd-rootfs
