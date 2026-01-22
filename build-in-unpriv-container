@@ -25,8 +25,8 @@ lxc config set $container_name security.syscalls.intercept.mount=true
 lxc config set $container_name security.syscalls.intercept.mount.shift=true
 lxc config set $container_name security.syscalls.intercept.mount.allowed=devtmpfs,devpts,proc,sysfs,securityfs,squashfs,ext4,vfat,cgroup2
 lxc config device add $container_name loop-control unix-char path=/dev/loop-control
-lxc file push $losetup_server_dir/losetup-client.py $container_name/root
-lxc file push $losetup_server_dir/mount-wrapper.py $container_name/root
+lxc file push $losetup_server_dir/losetup-client.py $container_name/root/
+lxc file push $losetup_server_dir/mount-wrapper.py $container_name/root/
 lxc start $container_name
 sleep 10
 lxc file push $pkg $container_name/tmp/
