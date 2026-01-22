@@ -7,7 +7,7 @@ set -eux
 SERIES=$1
 VARS=${2-PROJECT=ubuntu-cpc SUBARCH=generic}
 
-lxc init -c limits.cpu=4 -c limits.memory=8GiB ubuntu-daily:noble isobuilder-$SERIES
+lxc init --vm -c limits.cpu=4 -c limits.memory=8GiB ubuntu-daily:noble isobuilder-$SERIES
 lxc config device override isobuilder-$SERIES root size=150GiB
 lxc start isobuilder-$SERIES
 sleep 30

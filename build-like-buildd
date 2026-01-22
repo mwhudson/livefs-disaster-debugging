@@ -18,7 +18,6 @@ echo Creating profile
 
 lxc profile copy default lpbuildd
 lxc profile set lpbuildd security.nesting true
-lxc profile set lpbuildd security.nesting true
 lxc profile set lpbuildd security.privileged true
 lxc profile set lpbuildd raw.lxc 'lxc.cap.drop=
 lxc.cap.drop=sys_time sys_module
