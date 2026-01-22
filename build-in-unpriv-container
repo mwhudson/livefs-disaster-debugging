@@ -48,6 +48,6 @@ for c in build clean config; do
     ln -sv /usr/share/livecd-rootfs/live-build/auto/$c auto
 done
 lb clean --purge
-'$vars' ARCH=amd64 SUITE='$series' lb config
-'$vars' ARCH=amd64 lb build
+'"$vars"' ARCH=amd64 SUITE='$series' lb config
+'"$vars"' ARCH=amd64 lb build
 '
