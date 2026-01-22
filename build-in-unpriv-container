@@ -23,7 +23,7 @@ container_name=build-$series
 lxc init ubuntu-daily:$series $container_name
 lxc config set $container_name security.syscalls.intercept.mount=true
 lxc config set $container_name security.syscalls.intercept.mount.shift=true
-lxc config set $container_name security.syscalls.intercept.mount.allowed=devtmpfs,devpts,proc,sysfs,securityfs,squashfs,ext4,vfat,cgroup2
+lxc config set $container_name security.syscalls.intercept.mount.allowed=devtmpfs,devpts,proc,sysfs,securityfs,squashfs,ext4,vfat,cgroup2,overlay
 lxc config device add $container_name loop-control unix-char path=/dev/loop-control
 lxc file push $losetup_server_dir/losetup-client.py $container_name/root/
 lxc file push $losetup_server_dir/mount-wrapper.py $container_name/root/
