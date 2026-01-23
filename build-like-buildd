@@ -9,6 +9,7 @@ set -eux
 
 SERIES=$1
 VARS=${2-PROJECT=ubuntu-cpc SUBARCH=generic}
+PKG=${3-}
 
 echo Setting up LXD
 
@@ -25,7 +26,6 @@ lxc.cgroup.devices.deny=
 lxc.cgroup.devices.allow=
 lxc.cgroup2.devices.deny=
 lxc.cgroup2.devices.allow=
-lxc.mount.auto=
 lxc.mount.auto=proc:rw sys:rw
 lxc.mount.entry=udev /dev devtmpfs rw,nosuid,relatime,mode=755,inode64
 lxc.autodev=0
@@ -44,7 +44,20 @@ sleep 10
 lxc exec $SERIES-buildd -- sh -c '
 set -ex
 apt-get update && apt-get dist-upgrade -y
-apt-get install -y livecd-rootfs
+'
+
+if [ -n "$PKG" ]; then
+    lxc file push "${PKG}" $SERIES-buildd/root/
+    lxc exec $SERIES-buildd -- sh -c '
+        dpkg -i '"$(basename $PKG)"' || true
+        apt-get install -y -f
+    '
+else
+    lxc exec $SERIES-buildd -- sh -c '
+        apt-get install -y livecd-rootfs
+    '
+fi
+lxc exec $SERIES-buildd -- sh -c '
 mkdir auto
 for c in build clean config; do
     ln -sv /usr/share/livecd-rootfs/live-build/auto/$c auto

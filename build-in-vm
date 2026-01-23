@@ -6,10 +6,14 @@ set -eux
 
 SERIES=$1
 VARS=${2-PROJECT=ubuntu-cpc SUBARCH=generic}
+PKG=${3-}
 
 lxc init --vm -c limits.cpu=4 -c limits.memory=8GiB ubuntu-daily:noble isobuilder-$SERIES
 lxc config device override isobuilder-$SERIES root size=150GiB
 lxc start isobuilder-$SERIES
 sleep 30
-lxc file push build-like-buildd isobuilder-$SERIES/root/
-lxc exec isobuilder-$SERIES -- bash build-like-buildd $SERIES "$VARS"
+lxc file push $(dirname $(realpath $0))/build-like-buildd isobuilder-$SERIES/root/
+if [ -n "$PKG" ]; then
+    lxc file push "${PKG}" isobuilder-$SERIES/root/
+fi
+lxc exec isobuilder-$SERIES -- bash build-like-buildd $SERIES "$VARS" "$(basename $PKG)"
