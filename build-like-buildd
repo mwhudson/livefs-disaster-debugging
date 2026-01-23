@@ -17,6 +17,18 @@ lxd init --auto
 
 echo Creating profile
 
+apt install -y jq
+
+container_name=$SERIES-buildd
+
+if lxc list -f json | jq '.[].name' -r | grep -q '^'$container_name'$'; then
+    lxc delete --force $container_name
+fi
+
+if lxc profile list -f json | jq '.[].name' -r | grep -q '^lpbuildd$'; then
+    lxc profile delete lpbuildd
+fi
+
 lxc profile copy default lpbuildd
 lxc profile set lpbuildd security.nesting true
 lxc profile set lpbuildd security.privileged true
@@ -34,30 +46,30 @@ lxc.apparmor.profile=unconfined
 
 echo Creating LXD container
 
-lxc init --profile lpbuildd ubuntu-daily:$SERIES $SERIES-buildd
+lxc init --profile lpbuildd ubuntu-daily:$SERIES $container_name
 
 echo Starting LXD container
 
-lxc start $SERIES-buildd
+lxc start $container_name
 
 sleep 10
-lxc exec $SERIES-buildd -- sh -c '
+lxc exec $container_name -- sh -c '
 set -ex
 apt-get update && apt-get dist-upgrade -y
 '
 
 if [ -n "$PKG" ]; then
-    lxc file push "${PKG}" $SERIES-buildd/root/
-    lxc exec $SERIES-buildd -- sh -c '
+    lxc file push "${PKG}" $container_name/root/
+    lxc exec $container_name -- sh -c '
         dpkg -i '"$(basename $PKG)"' || true
         apt-get install -y -f
     '
 else
-    lxc exec $SERIES-buildd -- sh -c '
+    lxc exec $container_name -- sh -c '
         apt-get install -y livecd-rootfs
     '
 fi
-lxc exec $SERIES-buildd -- sh -c '
+lxc exec $container_name -- sh -c '
 mkdir auto
 for c in build clean config; do
     ln -sv /usr/share/livecd-rootfs/live-build/auto/$c auto
